@@ -28,7 +28,7 @@ public:
             return interval.count() > 0; 
         }
 
-        // Comparator for priority queue (earlier time has higher priority)
+        // (earlier time has higher priority)
         bool operator<(const ScheduledTask& other) const {
             return executionTime > other.executionTime; // Min-heap behaviour
         }
