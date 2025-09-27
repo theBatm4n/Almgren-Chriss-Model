@@ -35,7 +35,7 @@ public:
     void schedulerEvery(const std::chrono::milliseconds& interval, Task task);
 
 private:
-    //std::priority_queue<ScheduledTask> 
+    std::priority_queue<ScheduledTask> task_;
 };
 
 #endif
