@@ -10,6 +10,7 @@
 #include <atomic>
 #include <queue>
 #include <utility>
+#include <memory>
 
 class execution_scheduler
 {
@@ -22,6 +23,10 @@ public:
     {
         TimePoint executionTime;
         Task Task;
+        std::chrono::milliseconds interval{0}; // for recurring tasks 
+        bool isRecurring() const {
+            return interval.count() > 0; 
+        }
 
         // Comparator for priority queue (earlier time has higher priority)
         bool operator<(const ScheduledTask& other) const {
@@ -30,12 +35,35 @@ public:
     };
 
     execution_scheduler() = default;
+    ~execution_scheduler();
+
+    //Disable Copy 
+    execution_scheduler(const execution_scheduler&) = delete;
+    execution_scheduler& operator=(const execution_scheduler&) = delete;
+
+    //Allow move
+    execution_scheduler(execution_scheduler&&) = default;
+    execution_scheduler& operator=(execution_scheduler&&) = default;
+
+    void start();
+    void stop();
+    bool isRunning() const { return running_.load(); }
+
     void scheduleAt(const TimePoint& time, Task task);
     void scheduleAfter(const std::chrono::milliseconds& delay, Task task);
-    void schedulerEvery(const std::chrono::milliseconds& interval, Task task);
+    void scheduleEvery(const std::chrono::milliseconds& interval, Task task);
+
+    size_t pendingTasks() const;
 
 private:
-    std::priority_queue<ScheduledTask> task_;
+    void workerThread();
+    void addTask(const ScheduledTask& task);
+
+    mutable std::mutex queueMutex_;
+    std::condition_variable condition_;
+    std::priority_queue<ScheduledTask> tasks_;
+    std::atomic<bool> running_{false};
+    std::thread workerThread_;
 };
 
 #endif
