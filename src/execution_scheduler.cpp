@@ -1,4 +1,9 @@
 #include "execution_scheduler.hpp"
+#include "iostream"
+
+execution_scheduler::~execution_scheduler(){
+    stop();
+}
 
 
 void execution_scheduler::scheduleAt(const TimePoint& time, Task task)
