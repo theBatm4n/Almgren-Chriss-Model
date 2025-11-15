@@ -19,10 +19,9 @@ public:
     using TimePoint = std::chrono::steady_clock::time_point;
 
     // represents a scheduled task with execution time and the task itself
-    struct ScheduledTask 
-    {
+    struct ScheduledTask{
         TimePoint executionTime;
-        Task Task;
+        Task task;
         std::chrono::milliseconds interval{0}; // for recurring tasks 
         bool isRecurring() const {
             return interval.count() > 0; 
@@ -34,7 +33,7 @@ public:
         }
     };
 
-    execution_scheduler() = default;
+    execution_scheduler();
     ~execution_scheduler();
 
     //Disable Copy 

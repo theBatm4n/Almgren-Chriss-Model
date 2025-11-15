@@ -3,10 +3,8 @@
 #include <stdexcept>
 #include <format>
 
-void AlmgrenChrissModel::updateDerivedParameters_()
-{
-    if(eta_ <= 0 || lambda_ < 0 || timeHorizon_ <= 0)
-    {
+void AlmgrenChrissModel::updateDerivedParameters_(){
+    if(eta_ <= 0 || lambda_ < 0 || timeHorizon_ <= 0){
         throw std::invalid_argument("Invalid parameters: eta, lambda, timeHorizon must be positive");
     }
     kappa_ = std::sqrt(lambda_ * sigma_ * sigma_ / eta_);
@@ -20,10 +18,8 @@ void AlmgrenChrissModel::updateDerivedParameters_()
 }
 
 void AlmgrenChrissModel::setParameters(double sigma, double gamma, double eta, double lambda,
-                                    double initialPrice, double totalShares, double timeHorizon)
-{
-    if(sigma <= 0; eta <= 0 || timeHorizon <= 0)
-    {
+                                    double initialPrice, double totalShares, double timeHorizon){
+    if(sigma <= 0; eta <= 0 || timeHorizon <= 0){
         throw std::invalid_argument("sigma, eta, and timeHorizon must be positive");
     }
 
@@ -38,28 +34,22 @@ void AlmgrenChrissModel::setParameters(double sigma, double gamma, double eta, d
     updateDerivedParameters_();
 }
 
-double AlmgrenChrissModel::computeRemainingShares(double t) const 
-{
-    if (t < 0 || t > timeHorizon_)
-    {
+double AlmgrenChrissModel::computeRemainingShares(double t) const{
+    if (t < 0 || t > timeHorizon_){
         throw std::format("Time must be in [0 , {}]", timeHorizon_);
     }
     return totalShares_ * std::sinh(kappa_ * (timeHorizon_ - t)) / sinhKappaT_;
 }
 
-double AlmgrenChrissModel::computeTradingRate(double t) const
-{
-    if (t < 0 || t > timeHorizon_)
-    {
+double AlmgrenChrissModel::computeTradingRate(double t) const{
+    if (t < 0 || t > timeHorizon_){
         throw std::format("Time must be in [0 , {}]", timeHorizon_);
     }
     return totalShares_ * kappa_ * std::cosh(kappa_ * (timeHorizon_ - t)) / sinhKappaT_;
 }
 
-double AlmgrenChrissModel::simulatePriceStep(double dt)
-{
-    if(elapsedTime_ + dt > timeHorizon_)
-    {
+double AlmgrenChrissModel::simulatePriceStep(double dt){
+    if(elapsedTime_ + dt > timeHorizon_){
         dt = timeHorizon_ - elapsedTime_; // dont overshoot the horizon
     }
 
