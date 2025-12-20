@@ -24,6 +24,7 @@ public:
         double timeHorizon;
         double riskAversion;
         std::string orderId;
+        int numIntervals{10};
     };
 
     std::string submitOrder(const Order& order);
@@ -40,6 +41,7 @@ public:
     std::vector<Order> getActiveOrder() const;
     ExecutionMetrics getOrderMetrics(const std::string& orderId) const;
     std::vector<double> getRemainingSchedule(const std::string& orderId) const;
+    int calculateOptimalIntervalCount_(int totalShares);
 
 private:
     struct OrderExecutionContext{
@@ -49,7 +51,7 @@ private:
         size_t currentScheduleIndex{0};
         double executedShares{0.0};
         double averageExecutionPrice{0.0};
-        std::vector<std::pair<double, double>> excutionHistory; // time, price
+        std::vector<std::pair<double, double>> executionHistory; // time, price
         OrderStatus status{OrderStatus::PENDING};
 
         double remainingTime() const{

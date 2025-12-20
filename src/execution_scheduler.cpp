@@ -36,7 +36,7 @@ void execution_scheduler::scheduleAfter(const std::chrono::milliseconds& delay, 
 void execution_scheduler::scheduleEvery(const std::chrono::milliseconds& interval, Task task){
     auto now = std::chrono::steady_clock::now();
     ScheduledTask scheduledTask{now, std::move(task), interval};
-    addTask(scheduledTask); // why make a vairbale
+    addTask(scheduledTask); 
 }
 
 void execution_scheduler::addTask(const ScheduledTask& task){
@@ -53,11 +53,12 @@ size_t execution_scheduler::pendingTasks() const {
 }
 
 void execution_scheduler::workerThread(){
+    std::cout << "Worker thread STARTED" << std::endl;
     while(running_){
         std::unique_lock lock(queueMutex_);
 
         if(tasks_.empty()){
-            condition_.wait(lock, [this]() {return !tasks_.empty() || !running_; });
+            condition_.wait(lock, [this]() {return !tasks_.empty() || !running_; }); // only wake up when tasks exit or shutdown required 
             continue;
         }
 
@@ -67,8 +68,7 @@ void execution_scheduler::workerThread(){
         if(nextTask.executionTime <= now){
             //Execute task
             tasks_.pop();
-            lock.unlock();
-        
+            lock.unlock(); // Other threads can submit tasks immediately
 
             try{
                 nextTask.task();

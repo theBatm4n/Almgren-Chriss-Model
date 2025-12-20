@@ -18,7 +18,7 @@ int main() {
         order.totalShares = 50000;
         order.isBuy = false;  // Selling
         order.initialPrice = 150.0;
-        order.timeHorizon = 300.0; // 5 minutes in seconds
+        order.timeHorizon = 30.0; // 5 minutes in seconds
         order.riskAversion = 1.0;
         
         std::cout << "\n Order Details:" << std::endl;
@@ -37,7 +37,7 @@ int main() {
         // Monitor execution progress
         std::cout << "\n Monitoring execution..." << std::endl;
         for (int i = 0; i < 15; ++i) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::this_thread::sleep_for(std::chrono::seconds(10));
             
             auto status = engine.getOrderStatus(orderId);
             auto metrics = engine.getOrderMetrics(orderId);
@@ -81,6 +81,6 @@ int main() {
         return 1;
     }
     
-    std::cout << "\n🎉 Demo completed successfully!" << std::endl;
+    std::cout << "\n Demo completed successfully!" << std::endl;
     return 0;
 }
