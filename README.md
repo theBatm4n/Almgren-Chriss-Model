@@ -14,7 +14,7 @@ Minimize: \( E[x] + Var[x] \)
 ### Price Simulation
 We could use websockets to retrieve real market data from exchanges, but for demonstration purposes, we are simulating the price with the following equation:
 
-\[ dS(t) = -\gamma v(t) dt + \sigma dW(t) \]
+\[ dS(t) = -**γ (gamma)** v(t) dt + **σ (sigma)** dW(t) \]
 
 Where:
 - **dS(t)**: Price change over small time dt
@@ -25,3 +25,4 @@ Where:
 - **σ dW(t)**: Random market movement
   - **σ (sigma)**: Volatility (magnitude of market randomness)
   - **dW(t)**: Brownian motion (random walk, mean=0, variance=dt)
+
