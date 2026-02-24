@@ -1,29 +1,79 @@
-# Almgren Chriss Model
+# Almgren-Chriss Optimal Execution Engine
 
-## Goal: 
-How should I break up a large trade to minimize the cost of trading?
+## What is this project?
 
-### Core Problem: Market Impact and Timing Risk
-If you want to trade a large amount of shares, a large buy/sell order will push the price up/down before the order is filled. However, if you trade too slowly, the market might move against you.
+A trading engine that helps break up large stock orders into smaller pieces to minimize trading costs. It's based on the Almgren-Chriss mathematical model.
 
-The Almgren Chriss model generates a sequence of numbers representing the number of shares that should be bought/sold in order to minimize market impact and timing risk.
+## The Problem
 
-### Objective:
-Minimize: \( E[x] + Var[x] \)
+When you want to buy or sell a large number of shares:
+- **Trade too fast** → You move the market price against yourself (market impact)
+- **Trade too slow** → The market might move against you randomly (timing risk)
+
+## How it works
+
+The engine finds the perfect balance between these two risks by calculating an optimal trading schedule.
 
 ### Price Simulation
-We could use websockets to retrieve real market data from exchanges, but for demonstration purposes, we are simulating the price with the following equation:
 
-\[ dS(t) = -**γ** v(t) dt + **σ** dW(t) \]
+The model simulates price changes using this simple equation:
+Price change = (Your trading impact) + (Random market noise)
 
-Where:
-- **dS(t)**: Price change over small time dt
-- **-γ v(t) dt**: Your trading impact
-  - **γ (gamma)**: Permanent impact coefficient (your influence on price)
-  - **v(t)**: Your trading rate now (shares/second)
-  - **-sign**: Selling (v>0) pushes price DOWN, buying (v<0) pushes price UP
-- **σ dW(t)**: Random market movement
-  - **σ (sigma)**: Volatility (magnitude of market randomness)
-  - **dW(t)**: Brownian motion (random walk, mean=0, variance=dt)
+text
+
+- **Your trading impact**: When you sell, price goes down; when you buy, price goes up
+- **Random market noise**: Normal up/down movements that happen anyway
+
+## Technical Architecture
+
+- **C++ core**: Fast, multi-threaded execution engine
+- **Python bindings**: Easy to use from Python (via pybind11)
+- **Multi-threaded design**: 
+  - Multiple threads can submit orders
+  - One dedicated thread executes the trades
+
+## Features
+
+- Submit large orders with custom parameters
+- Get optimal trading schedules
+- Track execution progress
+- Monitor performance metrics
+- Real-time callbacks for execution updates
+
+## Quick Example
+
+```python
+import almgren_chriss as ac
+
+# Create engine
+engine = ac.TradingEngine()
+engine.initialize()
+
+# Submit a large order
+order_id = engine.submit_order(
+    symbol="AAPL",
+    total_shares=100000,
+    is_buy=False,  # Sell order
+    initial_price=150.0,
+    time_horizon=3600,  # Execute over 1 hour
+    risk_aversion=0.1
+)
+
+# Start execution
+engine.start_execution()
+
+# Track progress
+metrics = engine.get_order_metrics(order_id)
+print(f"Executed: {metrics.executed_shares}/{metrics.total_shares}")
+print(f"Average price: {metrics.average_execution_price}")
+```
+Why use this?
+Minimize trading costs for large orders
+
+Handle institutional-sized trades
+
+Quantify the trade-off between speed and cost
+
+Real-time execution monitoring
 
 
