@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Almgren-Chriss Trading Engine</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .stat-box h3 {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+        
+        .stat-box p {
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+        
+        .orders-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .order-form {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .orders-list {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            max-height: 500px;
+        }
+        
+        .order-item {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+        
+        .order-item:hover {
+            border-color: #667eea;
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .order-symbol {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .order-side {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .buy {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .sell {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            transition: width 1s ease;
+        }
+        
+        .order-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .metric {
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .metric span {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .chart-container {
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        .status-connected {
+            color: #28a745;
+        }
+        
+        .status-disconnected {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Almgren-Chriss Optimal Execution</h1>
+            <p>Real-time trading execution with optimal scheduling</p>
+            <p>Connection: <span id="connectionStatus" class="status-disconnected">Disconnected</span></p>
+        </div>
+        
+        <div class="stats-grid">
+            <div class="stat-box">
+                <h3 id="activeOrders">0</h3>
+                <p>Active Orders</p>
+            </div>
+            <div class="stat-box">
+                <h3 id="completedOrders">0</h3>
+                <p>Completed</p>
+            </div>
+            <div class="stat-box">
+                <h3 id="totalOrders">0</h3>
+                <p>Total Orders</p>
+            </div>
+            <div class="stat-box">
+                <h3 id="totalShares">0</h3>
+                <p>Total Shares</p>
+            </div>
+        </div>
+        
+        <div class="orders-section">
+            <div class="order-form">
+                <h2>New Order</h2>
+                <form id="orderForm">
+                    <div class="form-group">
+                        <label for="symbol">Symbol</label>
+                        <input type="text" id="symbol" value="AAPL" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="quantity">Quantity</label>
+                        <input type="number" id="quantity" value="10000" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="side">Side</label>
+                        <select id="side">
+                            <option value="BUY">BUY</option>
+                            <option value="SELL" selected>SELL</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="price">Price ($)</label>
+                        <input type="number" step="0.01" id="price" value="150.00" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="time_horizon">Time Horizon (seconds)</label>
+                        <input type="number" step="1" id="time_horizon" value="30" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="risk_aversion">Risk Aversion</label>
+                        <input type="number" step="0.1" id="risk_aversion" value="1.0" required>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="submitBtn">Submit Order</button>
+                </form>
+            </div>
+            
+            <div class="orders-list">
+                <h2>Active Orders</h2>
+                <div id="ordersContainer">No orders yet...</div>
+            </div>
+        </div>
+        
+        <div class="card chart-container">
+            <h2>Execution Progress</h2>
+            <canvas id="progressChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Connect to WebSocket
+        const socket = io();
+        let progressChart = null;
+        
+        // Update connection status
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            document.getElementById('connectionStatus').textContent = 'Connected';
+            document.getElementById('connectionStatus').className = 'status-connected';
+            loadStats();
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+            document.getElementById('connectionStatus').textContent = 'Disconnected';
+            document.getElementById('connectionStatus').className = 'status-disconnected';
+        });
+        
+        socket.on('connected', (data) => {
+            console.log('Server says:', data.message);
+        });
+        
+        // Handle form submission
+        document.getElementById('orderForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            
+            const orderData = {
+                symbol: document.getElementById('symbol').value,
+                quantity: parseInt(document.getElementById('quantity').value),
+                side: document.getElementById('side').value,
+                price: parseFloat(document.getElementById('price').value),
+                time_horizon: parseFloat(document.getElementById('time_horizon').value),
+                risk_aversion: parseFloat(document.getElementById('risk_aversion').value)
+            };
+            
+            try {
+                const response = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert('Order submitted: ' + result.id);
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + error.error);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Order';
+            }
+        });
+        
+        socket.on('order_created', (order) => {
+            console.log('New order created :', order);
+            updateOrderDisplay(order);
+            loadStats();
+        });
+
+        socket.on('trade_executed', (data) => {
+            console.log('Trade executed:', data);
+            updateOrderProgress(data);
+            updateChart(data);
+            
+            showNotification(`${data.symbol}: ${data.shares.toLocaleString()} shares @ $${data.price.toFixed(2)}`, 'info');
+        });
+
+        socket.on('order_status_changed', (data) => {
+            console.log('Status changed:', data);
+            updateOrderStatus(data.order_id, data.status);
+            
+            if (data.status === 'COMPLETED') {
+                showNotification(`Order ${data.order_id.substring(0, 8)}... completed!`, 'success');
+            }
+        });
+
+        socket.on('order_progress', (data) => {
+            console.log("order_progress RAW data:", JSON.stringify(data));
+            console.log('Progress update:', data);
+            updateOrderProgress(data);
+            updateChart(data);
+        });
+
+        // Update the updateOrderProgress function to handle new data format
+        function updateOrderProgress(data) {
+            const orderEl = document.getElementById(`order-${data.order_id}`);
+            if (orderEl) {
+                const progressFill = orderEl.querySelector('.progress-fill');
+                const progressText = orderEl.querySelector('.progress-text');
+                const metrics = orderEl.querySelectorAll('.metric span');
+                
+                if (progressFill) {
+                    progressFill.style.width = `${data.progress}%`;
+                }
+                if (progressText) {
+                    progressText.textContent = `${data.progress.toFixed(1)}% complete`;
+                }
+                if (metrics.length >= 4 && data.total_executed !== undefined) {
+                    metrics[0].textContent = data.total_executed.toLocaleString();
+                    if (data.price !== undefined) {
+                        metrics[1].textContent = `$${data.price.toFixed(2)}`;
+                    }
+                    if (data.total_shares !== undefined) {
+                        const remaining = data.total_shares - data.total_executed;
+                        metrics[2].textContent = `${remaining.toLocaleString()} remaining`;
+                    }
+                }
+            }
+        }
+        
+        // Update order in UI
+        function updateOrderDisplay(order) {
+            const container = document.getElementById('ordersContainer');
+            if (container.textContent === 'No orders yet...') {
+                container.innerHTML = '';
+            }
+            
+            const orderEl = document.createElement('div');
+            orderEl.className = 'order-item';
+            orderEl.id = `order-${order.id}`;
+            orderEl.innerHTML = `
+                <div class="order-header">
+                    <span class="order-symbol">${order.symbol}</span>
+                    <span class="order-side ${order.side.toLowerCase()}">${order.side}</span>
+                </div>
+                <div>${order.total_shares.toLocaleString()} shares @ $${order.initial_price || 150.00}</div>
+                <div class="order-status">Status: <strong>${order.status}</strong></div>
+                
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 0%"></div>
+                </div>
+                <div class="progress-text">0% complete</div>
+                
+                <div class="order-metrics">
+                    <div class="metric">Executed: <span>0</span></div>
+                    <div class="metric">Avg Price: <span>$0.00</span></div>
+                    <div class="metric">Shortfall: <span>$0.00</span></div>
+                    <div class="metric">ID: <span>${order.id.substring(0, 8)}...</span></div>
+                </div>
+                
+                <div style="margin-top: 10px;">
+                    <button onclick="startOrder('${order.id}')" class="btn" style="margin-right: 10px;">Start Execution</button>
+                    <button onclick="cancelOrder('${order.id}')" class="btn" style="background: #dc3545;">Cancel</button>
+                </div>
+            `;
+            
+            container.prepend(orderEl);
+        }
+        
+        function updateOrderStatus(orderId, status) {
+            const orderEl = document.getElementById(`order-${orderId}`);
+            if (orderEl) {
+                const statusEl = orderEl.querySelector('.order-status strong');
+                if (statusEl) statusEl.textContent = status;
+            }
+        }
+        
+        function updateOrderProgress(data) {
+            const orderEl = document.getElementById(`order-${data.id}`);
+            if (orderEl) {
+                const progressFill = orderEl.querySelector('.progress-fill');
+                const progressText = orderEl.querySelector('.progress-text');
+                const metrics = orderEl.querySelectorAll('.metric span');
+                
+                if (progressFill) {
+                    progressFill.style.width = `${data.progress}%`;
+                }
+                if (progressText) {
+                    progressText.textContent = `${data.progress.toFixed(1)}% complete`;
+                }
+                if (metrics.length >= 4) {
+                    metrics[0].textContent = data.metrics.executed_shares.toLocaleString();
+                    metrics[1].textContent = `$${data.metrics.average_price.toFixed(2)}`;
+                    metrics[2].textContent = `$${data.metrics.implementation_shortfall.toFixed(2)}`;
+                }
+            }
+        }
+        
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                
+                document.getElementById('activeOrders').textContent = stats.active_orders;
+                document.getElementById('completedOrders').textContent = stats.completed_orders;
+                document.getElementById('totalOrders').textContent = stats.total_orders;
+                document.getElementById('totalShares').textContent = stats.total_shares.toLocaleString();
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+        
+        // Start order execution
+        window.startOrder = async function(orderId) {
+            try {
+                const response = await fetch(`/api/orders/${orderId}/start`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    alert(' Execution started');
+                } else {
+                    const error = await response.json();
+                    alert(' Error: ' + error.error);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            }
+        };
+        
+        // Cancel order
+        window.cancelOrder = async function(orderId) {
+            if (confirm('Are you sure you want to cancel this order?')) {
+                try {
+                    const response = await fetch(`/api/orders/${orderId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        alert(' Order cancelled');
+                        const orderEl = document.getElementById(`order-${orderId}`);
+                        if (orderEl) orderEl.remove();
+                        loadStats();
+                    } else {
+                        const error = await response.json();
+                        alert('Error: ' + error.error);
+                    }
+                } catch (error) {
+                    alert('Network error: ' + error.message);
+                }
+            }
+        };
+        
+        // Chart functions
+        function initializeChart() {
+            console.log(" Initializing chart...");
+            const ctx = document.getElementById('progressChart');
+            if (!ctx) {
+                console.error(" Canvas element 'progressChart' not found!");
+                return;
+            }
+
+            if (progressChart) {
+                progressChart.destroy();
+            }
+            
+            progressChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Execution Progress (%)',
+                        data: [],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+            console.log("✅ Chart initialized");
+        }
+        
+        function updateChart(data) {
+            console.log("updateChart called with:", data);
+            console.log("Chart exists?", !!progressChart);
+            console.log("data.progress value:", data.progress, "type:", typeof data.progress);
+            
+            if (!progressChart) {
+                console.error(" Chart not initialized!");
+                initializeChart(); // Try to initialize
+                if (!progressChart) {
+                    console.error(" Still no chart after initialization!");
+                    return;
+                }
+            }
+            
+            // Validate progress value
+            const progress = parseFloat(data.progress);
+            if (isNaN(progress)) {
+                console.error("Invalid progress value:", data.progress);
+                return;
+            }
+            
+            const now = new Date().toLocaleTimeString();
+            console.log(`Adding: ${now} -> ${progress}%`);
+            
+            progressChart.data.labels.push(now);
+            progressChart.data.datasets[0].data.push(progress);
+            
+            // Keep only last 20 data points
+            if (progressChart.data.labels.length > 20) {
+                progressChart.data.labels.shift();
+                progressChart.data.datasets[0].data.shift();
+            }
+            
+            try {
+                progressChart.update();
+                console.log(" Chart updated successfully");
+            } catch (e) {
+                console.error(" Chart update failed:", e);
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log("DOM loaded, initializing chart...");
+            initializeChart();
+        });
+    </script>
+</body>
+</html>

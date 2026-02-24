@@ -221,7 +221,13 @@ void TradingEngine::executeTradeChunk_(const std::string& orderId, double shares
     double totalValue = context.averageExecutionPrice * (context.executedShares - shares);
     totalValue += shares * executionPrice;
     context.averageExecutionPrice = totalValue / context.executedShares;
+
+    double progressPercent = (context.executedShares / context.order.totalShares) *100;
     
+    emitExecution(orderId, context.order.symbol, shares, executionPrice, context.executedShares, context.order.totalShares);
+
+    emitProgress(orderId, progressPercent);
+
     std::cout << "Executed " << static_cast<int>(shares) << " shares of " << context.order.symbol
               << " @ $" << std::fixed << std::setprecision(2) << executionPrice 
               << " for order " << orderId << std::endl;
@@ -244,6 +250,8 @@ void TradingEngine::handleCompletedOrder_(const std::string& orderId) {
     auto it = activeOrders_.find(orderId);
     if (it != activeOrders_.end()) {
         it->second.status = OrderStatus::COMPLETED;
+
+        emitStatus(orderId, OrderStatus::COMPLETED);
         
         std::cout << "✅ Order COMPLETED: " << orderId 
                   << " | Total shares: " << it->second.executedShares

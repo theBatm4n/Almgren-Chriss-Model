@@ -3,13 +3,23 @@
 #include "execution_scheduler.hpp"
 #include "market_impact_model.hpp"
 #include "market_data.hpp"
-#include "excution_metrics.hpp"
+#include "execution_metrics.hpp"
 #include <memory>
 #include <vector>
 #include <map>
 
 class TradingEngine {
 public:
+    using ExecutionCallback = std::function<void(const std::string& orderId,
+        const std::string& symbol,
+        double Shares,
+        double price,
+        double totalExecuted,
+        double totalShares)>;
+    
+    using StatusCallback = std::function<void(const std::string& orderId, OrderStatus status)>;
+    using ProgressCallback = std::function<void(const std::string& orderId, double progressPercent)>;
+
     TradingEngine();
     ~TradingEngine();
 
@@ -43,10 +53,21 @@ public:
     std::vector<double> getRemainingSchedule(const std::string& orderId) const;
     int calculateOptimalIntervalCount_(int totalShares);
 
+    void setExecutionCallback(ExecutionCallback callback){
+        executionCallback_ = callback;
+    }
+    void setStatusCallback(StatusCallback callback) {
+        statusCallback_ = callback;
+    }
+    void setProgressCallback(ProgressCallback callback) { 
+        progressCallback_ = callback;
+    }
+
 private:
     struct OrderExecutionContext{
         Order order;
         AlmgrenChrissModel model;
+        
         std::vector<double> optimalSchedule;
         size_t currentScheduleIndex{0};
         double executedShares{0.0};
@@ -58,6 +79,10 @@ private:
             return order.timeHorizon - executedShares;
         }
     };
+
+    ExecutionCallback executionCallback_;
+    StatusCallback statusCallback_;
+    ProgressCallback progressCallback_;
 
     execution_scheduler scheduler_;
     std::map<std::string, OrderExecutionContext> activeOrders_;
@@ -76,4 +101,23 @@ private:
     
     void createExecutionTask_(const std::string& orderId, double sharesToExecute);
 
+    void emitExecution(const std::string& orderId, const std::string& symbol,
+                             double shares, double price,
+                             double totalExecuted, double totalShares)
+    {
+        if (executionCallback_) {
+            executionCallback_(orderId, symbol, shares, price, totalExecuted, totalShares);
+        }
+    }
+        void emitStatus(const std::string& orderId, OrderStatus status) {
+        if (statusCallback_) {
+            statusCallback_(orderId, status);
+        }
+    }
+    
+    void emitProgress(const std::string& orderId, double progressPercent) {
+        if (progressCallback_) {
+            progressCallback_(orderId, progressPercent);
+        }
+    }
 };

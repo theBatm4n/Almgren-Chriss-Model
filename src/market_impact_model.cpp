@@ -156,18 +156,13 @@ double AlmgrenChrissModel::simulatePriceStep(double dt){
 
     // Price update: dS = -γ v dt + σ dW
     double permanentImpact = -gamma_ * v * dt ; // Scale for reasonable impact
-    double randomWalk = sigma_ * dW * initialPrice_; // Scale volatility by price
-    
-    double priceChange = permanentImpact + randomWalk;
-    currentPrice_ += priceChange;
-    elapsedTime_ += dt;
+    double randomWalk = sigma_ * dW;
+    currentPrice_ *= (1.0 + randomWalk);
+    currentPrice_ += permanentImpact;
 
     if (currentPrice_ <= 0.0){
         throw std::runtime_error("Price became negative - check parameters");
     }
-
-    std::cout << "Price step: dt=" << dt << ", v=" << v << ", dW=" << dW 
-              << ", dS=" << priceChange << ", S=" << currentPrice_ << std::endl;
     
     return currentPrice_;
 }

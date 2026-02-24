@@ -1,5 +1,4 @@
-#ifndef EXECUTION_SCHEDULER_HPP
-#define EXECUTION_SCHEDULER_HPP
+#pragma once
 
 #include <functional>
 #include <vector>
@@ -64,5 +63,3 @@ private:
     std::atomic<bool> running_{false};
     std::thread workerThread_;
 };
-
-#endif
