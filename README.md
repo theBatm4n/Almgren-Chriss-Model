@@ -67,7 +67,7 @@ metrics = engine.get_order_metrics(order_id)
 print(f"Executed: {metrics.executed_shares}/{metrics.total_shares}")
 print(f"Average price: {metrics.average_execution_price}")
 ```
-Why use this?
+## Why use this?
 Minimize trading costs for large orders
 
 Handle institutional-sized trades
@@ -77,5 +77,6 @@ Quantify the trade-off between speed and cost
 Real-time execution monitoring
 
 <img width="2542" height="1294" alt="image" src="https://github.com/user-attachments/assets/16217c5e-a9c1-48c2-aaf2-af3167627bef" />
+
 
 
